@@ -5,5 +5,7 @@
 
 void kprintf(const char *format, ...);
 
+#define LOG(format, ...) kprintf(format, ##__VA_ARGS__)
+
 #define _INC_DEBUG_H
 #endif

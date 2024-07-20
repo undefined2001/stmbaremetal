@@ -6,5 +6,7 @@
 void TimerInit();
 void DelayUS(uint16_t delay);
 void DelayMS(uint16_t delay);
+void TIM2_Init();
+uint32_t GetTick();
 
 #endif
