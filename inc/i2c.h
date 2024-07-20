@@ -37,6 +37,10 @@ void I2C_ClockEnable(I2C_TypeDef *pI2C);
 void I2C_AckControl(I2C_TypeDef *pI2C, uint32_t state);
 void I2C_PerpheralControl(I2C_TypeDef *pI2C, uint32_t state);
 void I2C_Init(I2C_Handle_t *I2C_Handle);
+void I2C_MasterSendData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len);
+void I2C_MasterReceiveData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len);
+uint32_t I2C_GetStatusFlag(uint32_t reg, uint32_t pos);
+
 void I2C_Start();
 void I2C_SendAddress(uint8_t address, uint8_t rw);
 void I2C_Stop();

@@ -1,6 +1,11 @@
 #include "i2c.h"
 #include "clock.h"
 
+uint32_t I2C_GetStatusFlag(uint32_t reg, uint32_t pos)
+{
+    return reg & pos;
+}
+
 void I2C_ClockEnable(I2C_TypeDef *pI2C)
 {
     if (pI2C == I2C1)
@@ -94,6 +99,55 @@ void I2C_Init(I2C_Handle_t *I2C_Handle)
     }
     I2C_Handle->pI2C->TRISE = (fpclk / 1000000UL) + 1;
     I2C_PerpheralControl(I2C_Handle->pI2C, ENABLE);
+}
+
+void I2C_MasterSendData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len)
+{
+    pI2C->CR1 |= I2C_CR1_START;
+    while (!(pI2C->SR1 & I2C_SR1_SB))
+        ;
+    pI2C->DR = (address << 1U);
+    while (!(pI2C->SR1 & I2C_SR1_ADDR))
+        ;
+    (void)(pI2C->SR1 & pI2C->SR2);
+
+    while (len--)
+    {
+        pI2C->DR = *buffer++;
+        while (!(pI2C->SR1 & I2C_SR1_TXE))
+            ;
+        while (!(pI2C->SR1 & I2C_SR1_BTF))
+            ;
+    }
+    pI2C->CR1 |= I2C_CR1_STOP;
+}
+
+void I2C_MasterReceiveData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len)
+{
+    pI2C->CR1 |= I2C_CR1_START;
+    while (!(pI2C->SR1 & I2C_SR1_SB))
+        ;
+    pI2C->DR = (address << 1U) | 1;
+    while (!(pI2C->SR1 & I2C_SR1_ADDR))
+        ;
+    (void)(pI2C->SR1 & pI2C->SR2);
+
+    while (len)
+    {
+        if (len == 1)
+        {
+            pI2C->CR1 &= ~I2C_CR1_ACK;
+            pI2C->CR1 = I2C_CR1_STOP;
+        }
+
+        while (!(pI2C->SR1 & I2C_SR1_RXNE))
+            ;
+        *buffer = pI2C->DR;
+        buffer++;
+
+        len--;
+    }
+    pI2C->CR1 |= I2C_CR1_STOP;
 }
 
 void I2C_Start()

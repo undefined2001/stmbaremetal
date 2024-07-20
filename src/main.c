@@ -21,11 +21,17 @@ int main()
     TimerInit();
     I2C_begin();
 
-    I2C_Start();
-    I2C_SendAddress(0x77, 0);
-    I2C_Stop();
+    uint8_t buffer[] = {0xD0, 0x00};
 
-    LOG("Data Sent Successfully!\n");
+    uint8_t recv = 0;
+
+    I2C_MasterSendData(I2C1, 0x77, buffer, sizeof(buffer));
+    I2C_MasterReceiveData(I2C1, 0x77, &recv, sizeof(recv));
+
+    if (recv == 0x61)
+    {
+        LOG("Got A Valid BME680 Sensor!\n");
+    }
 
     while (1)
     {
