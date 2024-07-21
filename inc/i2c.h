@@ -42,20 +42,20 @@ typedef struct
 void I2C_GPIO_Init();
 void I2C_ClockEnable(I2C_TypeDef *pI2C);
 void I2C_AckControl(I2C_TypeDef *pI2C, uint32_t state);
-void I2C_PerpheralControl(I2C_TypeDef *pI2C, uint32_t state);
+void I2C_PeripheralControl(I2C_TypeDef *pI2C, uint32_t state);
 void I2C_Init(I2C_Handle_t *I2C_Handle);
-void I2C_MasterSendData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len, uint8_t Sr);
-void I2C_MasterReceiveData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len, uint8_t Sr);
-uint32_t I2C_GetStatusFlag(uint32_t reg, uint32_t pos);
+void I2C_Start(I2C_TypeDef *pI2C);
+void I2C_Stop(I2C_TypeDef *pI2C);
+void I2C_SendAddress(I2C_TypeDef *pI2C, uint8_t address, uint8_t rw);
+void I2C_clearAddressFlag(I2C_TypeDef *pI2C);
 
-void I2C_Start();
-void I2C_SendAddress(uint8_t address, uint8_t rw);
-void I2C_Stop();
-void I2C_WriteByte(uint8_t data);
-uint8_t I2C_ReadByte();
-void I2C_Read_Buffer(uint8_t address, uint8_t reg, uint8_t *buffer, uint8_t len);
-void I2C_Write_Buffer(uint8_t address, uint8_t *buffer, uint8_t len);
-void I2C_ACK_Enable();
-void I2C_ACK_Disable();
+void I2C_MasterSendData(I2C_Handle_t *I2C_Handle, uint8_t address, uint8_t *buffer, uint8_t len, uint8_t Sr);
+void I2C_MasterReceiveData(I2C_Handle_t *I2C_Handle, uint8_t address, uint8_t *buffer, uint8_t len, uint8_t Sr);
+
+/**
+ * @brief: API for using I2C with Interrupt
+ */
+void I2C_MasterSendDataIT(I2C_Handle_t *I2C_Handle, uint8_t address, uint8_t *buffer, uint8_t len, uint8_t Sr);
+void I2C_MasterReceiveDataIT(I2C_Handle_t *I2C_Handle, uint8_t address, uint8_t *buffer, uint8_t len, uint8_t Sr);
 
 #endif
