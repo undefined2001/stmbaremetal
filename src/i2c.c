@@ -91,7 +91,7 @@ void I2C_Init(I2C_Handle_t *I2C_Handle)
             ccr_val = fpclk / (25 * I2C_Handle->Config.I2CSpeed);
             I2C_Handle->pI2C->CCR |= (ccr_val & 0xFFF);
         }
-        else if (I2C_Handle->Config.FMDutyCycle == I2C_FM_DUTY_16_9)
+        else if (I2C_Handle->Config.FMDutyCycle == I2C_FM_DUTY_2)
         {
             ccr_val = fpclk / (3 * I2C_Handle->Config.I2CSpeed);
             I2C_Handle->pI2C->CCR |= (ccr_val & 0xFFF);
@@ -101,34 +101,35 @@ void I2C_Init(I2C_Handle_t *I2C_Handle)
     I2C_PerpheralControl(I2C_Handle->pI2C, ENABLE);
 }
 
-void I2C_MasterSendData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len)
+void I2C_MasterSendData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len, uint8_t Sr)
 {
     pI2C->CR1 |= I2C_CR1_START;
-    while (!(pI2C->SR1 & I2C_SR1_SB))
+    while (!I2C_GET_FLAG(pI2C->SR1, I2C_SR1_SB))
         ;
     pI2C->DR = (address << 1U);
-    while (!(pI2C->SR1 & I2C_SR1_ADDR))
+    while (!I2C_GET_FLAG(pI2C->SR1, I2C_SR1_ADDR))
         ;
     (void)(pI2C->SR1 & pI2C->SR2);
 
     while (len--)
     {
         pI2C->DR = *buffer++;
-        while (!(pI2C->SR1 & I2C_SR1_TXE))
+        while (!I2C_GET_FLAG(pI2C->SR1, I2C_SR1_TXE))
             ;
-        while (!(pI2C->SR1 & I2C_SR1_BTF))
+        while (!I2C_GET_FLAG(pI2C->SR1, I2C_SR1_BTF))
             ;
     }
-    pI2C->CR1 |= I2C_CR1_STOP;
+    if (!Sr)
+        pI2C->CR1 |= I2C_CR1_STOP;
 }
 
-void I2C_MasterReceiveData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len)
+void I2C_MasterReceiveData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len, uint8_t Sr)
 {
     pI2C->CR1 |= I2C_CR1_START;
-    while (!(pI2C->SR1 & I2C_SR1_SB))
+    while (!I2C_GET_FLAG(pI2C->SR1, I2C_SR1_SB))
         ;
     pI2C->DR = (address << 1U) | 1;
-    while (!(pI2C->SR1 & I2C_SR1_ADDR))
+    while (!I2C_GET_FLAG(pI2C->SR1, I2C_SR1_ADDR))
         ;
     (void)(pI2C->SR1 & pI2C->SR2);
 
@@ -140,14 +141,15 @@ void I2C_MasterReceiveData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, 
             pI2C->CR1 = I2C_CR1_STOP;
         }
 
-        while (!(pI2C->SR1 & I2C_SR1_RXNE))
+        while (!I2C_GET_FLAG(pI2C->SR1, I2C_SR1_RXNE))
             ;
         *buffer = pI2C->DR;
         buffer++;
 
         len--;
     }
-    pI2C->CR1 |= I2C_CR1_STOP;
+    if (!Sr)
+        pI2C->CR1 |= I2C_CR1_STOP;
 }
 
 void I2C_Start()

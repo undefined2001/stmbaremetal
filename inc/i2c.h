@@ -2,8 +2,13 @@
 #define _INC_I2C_H
 #include "stm32f446xx.h"
 
+#define I2C_GET_FLAG(__FLAG, __FLAG_POS) (__FLAG & __FLAG_POS)
+
 #define DISABLE 0U
 #define ENABLE 1U
+
+#define I2C_NO_REPEATED_START 0U
+#define I2C_REPEATED_START 1U
 
 #define I2C_MODE_MASTER 0U
 #define I2C_MODE_SLAVE 1U
@@ -37,8 +42,8 @@ void I2C_ClockEnable(I2C_TypeDef *pI2C);
 void I2C_AckControl(I2C_TypeDef *pI2C, uint32_t state);
 void I2C_PerpheralControl(I2C_TypeDef *pI2C, uint32_t state);
 void I2C_Init(I2C_Handle_t *I2C_Handle);
-void I2C_MasterSendData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len);
-void I2C_MasterReceiveData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len);
+void I2C_MasterSendData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len, uint8_t Sr);
+void I2C_MasterReceiveData(I2C_TypeDef *pI2C, uint8_t address, uint8_t *buffer, uint8_t len, uint8_t Sr);
 uint32_t I2C_GetStatusFlag(uint32_t reg, uint32_t pos);
 
 void I2C_Start();
