@@ -3,54 +3,35 @@
 #include "debug.h"
 #include "i2c.h"
 
-uint32_t TxComplete = 0;
-
-I2C_Handle_t i2c;
-
-void I2C_begin()
+void I2C_GPIO_Init()
 {
-    i2c.pI2C = I2C1;
-    i2c.Config.AckControl = I2C_ACK_ENABLE;
-    i2c.Config.FMDutyCycle = I2C_FM_DUTY_16_9;
-    i2c.Config.Mode = I2C_MODE_MASTER;
-    i2c.Config.I2CSpeed = I2C_SPEED_400KHz;
-    I2C_GPIO_Init();
-    NVIC_EnableIRQ(I2C1_EV_IRQn);
-    NVIC_EnableIRQ(I2C1_ER_IRQn);
-    I2C_Init(&i2c);
+    // Enabling Clock for GPIOB
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
+    GPIOB->MODER |= GPIO_MODER_MODE8_1 | GPIO_MODER_MODE9_1;
+    GPIOB->OTYPER |= GPIO_OTYPER_OT8 | GPIO_OTYPER_OT9;
+    GPIOB->PUPDR |= GPIO_PUPDR_PUPD8_0 | GPIO_PUPDR_PUPD9_0;
+    GPIOB->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR8 | GPIO_OSPEEDER_OSPEEDR9;
+    GPIOB->AFR[1] |= (4U << GPIO_AFRH_AFSEL8_Pos) | (4U << GPIO_AFRH_AFSEL9_Pos);
 }
 
 int main()
 {
-    UartInit();
-    TimerInit();
-    I2C_begin();
+    TIM2_Init();
+    I2C_GPIO_Init();
+    I2C_HandleTypeDef i2c;
+    i2c.pI2Cx = I2C1;
+    i2c.Config.FMDutyCycle = I2C_FM_DUTY_16_9;
+    i2c.Config.SCLSpeed = I2C_SM_SPEED_100KHz;
 
-    uint8_t buffer[] = {'T', 'A', 'J'};
+    if (I2C_Init(&i2c) == I2C_OK)
+    {
+        int res = I2C_GenStartCondition(i2c.pI2Cx);
+        res++;
+    }
 
     while (1)
     {
-        while(I2C_MasterSendDataIT(&i2c, 0x77, buffer, sizeof(buffer), I2C_REPEATED_START) != I2C_READY);
-        while (!TxComplete)
-            ;
-
-        LOG("Transmission Finished Successfully: %s\n", buffer);
-        TxComplete = 0;
     }
 
     return 0;
-}
-
-void I2C1_EV_IRQHandler()
-{
-    I2C1_EV_IRQHandling(&i2c);
-}
-
-void I2C_ApplicationEventCallback(I2C_Handle_t *pI2CHandle, App_Event event)
-{
-    if (event == I2C_TX_COMPLETE)
-    {
-        TxComplete = 1;
-    }
-    // Do Nothing;
 }
