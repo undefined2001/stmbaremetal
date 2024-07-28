@@ -267,7 +267,8 @@ I2C_Status I2C_MasterReceiveDataIT(I2C_HandleTypeDef *pI2CHandle, uint8_t addres
         pI2CHandle->DevAddr = address;
         pI2CHandle->pRxBuffer = pBuffer;
         pI2CHandle->RxLen = len;
-        pI2CHandle->TxRxState = I2C_BUSY_TX;
+        pI2CHandle->RxSize = len;
+        pI2CHandle->TxRxState = I2C_BUSY_RX;
 
         if (I2C_GenStartCondition(pI2CHandle->pI2Cx) != I2C_OK)
         {
@@ -278,17 +279,34 @@ I2C_Status I2C_MasterReceiveDataIT(I2C_HandleTypeDef *pI2CHandle, uint8_t addres
     return state;
 }
 
+void I2C_CloseReception(I2C_HandleTypeDef *pI2CHandle)
+{
+    pI2CHandle->pI2Cx->CR2 &= ~I2C_CR2_ITBUFEN;
+    pI2CHandle->pI2Cx->CR2 &= ~I2C_CR2_ITEVTEN;
+
+    pI2CHandle->pRxBuffer = NULL;
+    pI2CHandle->RxLen = 0;
+    pI2CHandle->RxSize = 0;
+    pI2CHandle->TxRxState = I2C_READY;
+
+    // Enabling ACK
+    I2C_ACKControl(pI2CHandle->pI2Cx, I2C_ACK_ENABLE);
+}
+
 I2C_Status I2C_EV_IRQHandling(I2C_HandleTypeDef *pI2CHandle)
 {
     uint32_t temp1, temp2, temp3;
+
+    // Check if event interrupt is enabled
     temp1 = I2C_GET_FLAG(pI2CHandle->pI2Cx->CR2, I2C_CR2_ITEVTEN);
+    // Check if buffer interrupt is enabled
     temp2 = I2C_GET_FLAG(pI2CHandle->pI2Cx->CR2, I2C_CR2_ITBUFEN);
-    temp3 = I2C_GET_FLAG(pI2CHandle->pI2Cx->SR1, I2C_SR1_SB);
 
     // Checking for Start Condition
+    temp3 = pI2CHandle->pI2Cx->SR1 & I2C_SR1_SB;
     if (temp1 && temp3)
     {
-        // Statrt Condition Generated Succesfully Need to Execute Address Phase
+        // Start Condition Generated Successfully, Need to Execute Address Phase
         if (pI2CHandle->TxRxState == I2C_BUSY_TX)
         {
             I2C_MasterSendAddress(pI2CHandle->pI2Cx, pI2CHandle->DevAddr, 0);
@@ -299,8 +317,8 @@ I2C_Status I2C_EV_IRQHandling(I2C_HandleTypeDef *pI2CHandle)
         }
     }
 
-    // Checking For Address Flag
-    temp3 = I2C_GET_FLAG(pI2CHandle->pI2Cx->SR1, I2C_SR1_ADDR);
+    // Checking for Address Flag
+    temp3 = pI2CHandle->pI2Cx->SR1 & I2C_SR1_ADDR;
     if (temp1 && temp3)
     {
         // We have to Clear the address flag
@@ -308,21 +326,75 @@ I2C_Status I2C_EV_IRQHandling(I2C_HandleTypeDef *pI2CHandle)
         {
             I2C_ACKControl(pI2CHandle->pI2Cx, I2C_ACK_DISABLE);
         }
-        (void)(pI2CHandle->pI2Cx->SR1 & pI2CHandle->pI2Cx->SR1);
+        (void)pI2CHandle->pI2Cx->SR1;
+        (void)pI2CHandle->pI2Cx->SR2;
     }
 
-    // Checking for if the data transfer finished
-    temp3 = I2C_GET_FLAG(pI2CHandle->pI2Cx->SR1, I2C_SR1_BTF);
-    if (temp1 && temp2 && temp3)
+    // Checking if the data transfer is finished
+    temp3 = pI2CHandle->pI2Cx->SR1 & I2C_SR1_BTF;
+    if (temp1 && temp3)
     {
-        if (pI2CHandle->TxLen == 0)
+        if (pI2CHandle->TxLen == 0 && pI2CHandle->TxRxState == I2C_BUSY_TX)
         {
             // Stop the communication
             I2C_GenStopCondition(pI2CHandle->pI2Cx);
 
-            // Close the Sturcture
+            // Close the I2C communication
+            // I2C_CloseTransmission(pI2CHandle);
 
-            // Call the Applicatin Callback Function
+            // Call the Application Callback Function
+            I2C_ApplicationEventCallback(pI2CHandle, I2C_TX_COMPLETE);
         }
     }
+
+    // Checking if TXE flag is set
+    temp3 = pI2CHandle->pI2Cx->SR1 & I2C_SR1_TXE;
+    if (temp1 && temp2 && temp3)
+    {
+        if (pI2CHandle->TxRxState == I2C_BUSY_TX && pI2CHandle->TxLen > 0)
+        {
+            pI2CHandle->pI2Cx->DR = *pI2CHandle->pTxBuffer++;
+            pI2CHandle->TxLen--;
+        }
+    }
+
+    // Checking if RXNE flag is set
+    temp3 = pI2CHandle->pI2Cx->SR1 & I2C_SR1_RXNE;
+    if (temp1 && temp2 && temp3)
+    {
+        if (pI2CHandle->TxRxState == I2C_BUSY_RX)
+        {
+            if (pI2CHandle->RxSize > 1)
+            {
+                if (pI2CHandle->RxLen == 2)
+                {
+                    // clear the ack bit
+                    I2C_ACKControl(pI2CHandle->pI2Cx, I2C_ACK_DISABLE);
+                }
+
+                // read DR
+                *pI2CHandle->pRxBuffer = pI2CHandle->pI2Cx->DR;
+                pI2CHandle->pRxBuffer++;
+                pI2CHandle->RxLen--;
+            }
+
+            if (pI2CHandle->RxLen == 0)
+            {
+                // Stop the communication
+                I2C_GenStopCondition(pI2CHandle->pI2Cx);
+
+                // Close the I2C reception
+                I2C_CloseReception(pI2CHandle);
+
+                // Call the Application Callback Function
+                I2C_ApplicationEventCallback(pI2CHandle, I2C_RX_COMPLETE);
+            }
+        }
+    }
+
+    return I2C_OK;
+}
+
+__attribute__((weak)) void I2C_ApplicationEventCallback(I2C_HandleTypeDef *pI2CHandle, uint8_t Event)
+{
 }

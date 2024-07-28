@@ -4,6 +4,7 @@
 #include "stm32f446xx.h"
 #include "clock.h"
 #include "stdbool.h"
+#include "stddef.h"
 #include "timer.h"
 
 #define I2C_GET_FLAG(__I2C_Reg__, __Flag__) (__I2C_Reg__ & __Flag__)
@@ -27,6 +28,9 @@
 #define I2C_FM_SPEED_300KHz 300000U
 #define I2C_FM_SPEED_350KHz 350000U
 #define I2C_FM_SPEED_400KHz 400000U
+
+#define I2C_TX_COMPLETE 0
+#define I2C_RX_COMPLETE 1U
 
 typedef enum
 {
@@ -74,5 +78,7 @@ I2C_Status I2C_MasterSendDataIT(I2C_HandleTypeDef *pI2CHandle, uint8_t address, 
 I2C_Status I2C_MasterReceiveDataIT(I2C_HandleTypeDef *pI2CHandle, uint8_t address, uint8_t *pBuffer, uint8_t len, uint32_t RepStart);
 I2C_Status I2C_EV_IRQHandling(I2C_HandleTypeDef *pI2CHandle);
 void I2C_CloseTransmission(I2C_HandleTypeDef *pI2CHandle);
+void I2C_CloseReception(I2C_HandleTypeDef *pI2CHandle);
+void I2C_ApplicationEventCallback(I2C_HandleTypeDef *pI2CHandle, uint8_t Event);
 
 #endif
