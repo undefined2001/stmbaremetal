@@ -5,7 +5,7 @@
 
 I2C_HandleTypeDef i2c;
 
-uint8_t RxComplete = 0;
+uint8_t RxComplete = 0, TxComplete = 0;
 
 void I2C_GPIO_Init()
 {
@@ -35,13 +35,17 @@ int main()
 
     while (1)
     {
-        I2C_MasterSendData(&i2c, 0x77, buffer, sizeof(buffer), 0);
+        while (I2C_MasterSendDataIT(&i2c, 0x77, buffer, sizeof(buffer), I2C_REPEATED_START) != I2C_READY)
+            ;
+        while (!TxComplete)
+            ;
         while (I2C_MasterReceiveDataIT(&i2c, 0x77, response, sizeof(response), 0) != I2C_READY)
             ;
         while (!RxComplete)
             ;
         LOG("Receive Complete!\n");
         RxComplete = 0;
+        TxComplete = 0;
     }
 
     return 0;
@@ -57,5 +61,9 @@ void I2C_ApplicationEventCallback(I2C_HandleTypeDef *pI2CHandle, uint8_t Event)
     if (Event == I2C_RX_COMPLETE)
     {
         RxComplete = 1;
+    }
+    if (Event == I2C_TX_COMPLETE)
+    {
+        TxComplete = 1;
     }
 }

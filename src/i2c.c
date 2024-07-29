@@ -259,6 +259,26 @@ I2C_Status I2C_MasterReceiveData(I2C_HandleTypeDef *pI2CHandle, uint8_t address,
     return I2C_OK;
 }
 
+I2C_Status I2C_MasterSendDataIT(I2C_HandleTypeDef *pI2CHandle, uint8_t address, uint8_t *pBuffer, uint8_t len, uint32_t RepStart)
+{
+    uint8_t state = pI2CHandle->TxRxState;
+    if (state == I2C_READY)
+    {
+        pI2CHandle->DevAddr = address;
+        pI2CHandle->pTxBuffer = pBuffer;
+        pI2CHandle->TxLen = len;
+        pI2CHandle->TxRxState = I2C_BUSY_TX;
+        pI2CHandle->Sr = RepStart;
+
+        if (I2C_GenStartCondition(pI2CHandle->pI2Cx) != I2C_OK)
+        {
+            return I2C_ERR;
+        }
+        pI2CHandle->pI2Cx->CR2 |= I2C_CR2_ITBUFEN | I2C_CR2_ITERREN | I2C_CR2_ITEVTEN;
+    }
+    return state;
+}
+
 I2C_Status I2C_MasterReceiveDataIT(I2C_HandleTypeDef *pI2CHandle, uint8_t address, uint8_t *pBuffer, uint8_t len, uint32_t RepStart)
 {
     uint8_t state = pI2CHandle->TxRxState;
@@ -269,6 +289,7 @@ I2C_Status I2C_MasterReceiveDataIT(I2C_HandleTypeDef *pI2CHandle, uint8_t addres
         pI2CHandle->RxLen = len;
         pI2CHandle->RxSize = len;
         pI2CHandle->TxRxState = I2C_BUSY_RX;
+        pI2CHandle->Sr = RepStart;
 
         if (I2C_GenStartCondition(pI2CHandle->pI2Cx) != I2C_OK)
         {
@@ -277,6 +298,16 @@ I2C_Status I2C_MasterReceiveDataIT(I2C_HandleTypeDef *pI2CHandle, uint8_t addres
         pI2CHandle->pI2Cx->CR2 |= I2C_CR2_ITBUFEN | I2C_CR2_ITERREN | I2C_CR2_ITEVTEN;
     }
     return state;
+}
+
+void I2C_CloseTransmission(I2C_HandleTypeDef *pI2CHandle)
+{
+    pI2CHandle->pI2Cx->CR2 &= ~I2C_CR2_ITBUFEN;
+    pI2CHandle->pI2Cx->CR2 &= ~I2C_CR2_ITEVTEN;
+
+    pI2CHandle->pTxBuffer = NULL;
+    pI2CHandle->TxLen = 0;
+    pI2CHandle->TxRxState = I2C_READY;
 }
 
 void I2C_CloseReception(I2C_HandleTypeDef *pI2CHandle)
@@ -337,10 +368,13 @@ I2C_Status I2C_EV_IRQHandling(I2C_HandleTypeDef *pI2CHandle)
         if (pI2CHandle->TxLen == 0 && pI2CHandle->TxRxState == I2C_BUSY_TX)
         {
             // Stop the communication
-            I2C_GenStopCondition(pI2CHandle->pI2Cx);
+            if (pI2CHandle->Sr == I2C_NO_REPEATED_START)
+            {
+                I2C_GenStopCondition(pI2CHandle->pI2Cx);
+            }
 
             // Close the I2C communication
-            // I2C_CloseTransmission(pI2CHandle);
+            I2C_CloseTransmission(pI2CHandle);
 
             // Call the Application Callback Function
             I2C_ApplicationEventCallback(pI2CHandle, I2C_TX_COMPLETE);
@@ -381,7 +415,10 @@ I2C_Status I2C_EV_IRQHandling(I2C_HandleTypeDef *pI2CHandle)
             if (pI2CHandle->RxLen == 0)
             {
                 // Stop the communication
-                I2C_GenStopCondition(pI2CHandle->pI2Cx);
+                if (pI2CHandle->Sr == I2C_NO_REPEATED_START)
+                {
+                    I2C_GenStopCondition(pI2CHandle->pI2Cx);
+                }
 
                 // Close the I2C reception
                 I2C_CloseReception(pI2CHandle);

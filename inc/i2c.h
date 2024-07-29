@@ -32,6 +32,9 @@
 #define I2C_TX_COMPLETE 0
 #define I2C_RX_COMPLETE 1U
 
+#define I2C_NO_REPEATED_START 0
+#define I2C_REPEATED_START 1
+
 typedef enum
 {
     I2C_ACK_ERR = 3,
@@ -64,6 +67,7 @@ typedef struct
     uint8_t RxSize;
     uint8_t TxRxState;
     uint8_t DevAddr;
+    uint8_t Sr;
 } I2C_HandleTypeDef;
 
 I2C_Status I2C_ACKControl(I2C_TypeDef *pI2Cx, uint8_t State);
