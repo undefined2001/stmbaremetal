@@ -30,6 +30,76 @@ void UartInit()
     USART2->CR1 |= USART_CR1_UE;
     NVIC_EnableIRQ(USART2_IRQn);
 }
+__STATIC_INLINE void UART_EnableClock(USART_TypeDef *pUARTx)
+{
+    if (pUARTx == USART1)
+    {
+        RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+    }
+    else if (pUARTx == USART2)
+    {
+        RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
+    }
+    else if (pUARTx == USART3)
+    {
+        RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
+    }
+}
+
+__STATIC_INLINE void UART_PeripheralControl(USART_TypeDef *pUARTx, uint8_t State)
+{
+    if (State == UART_ENABLE)
+    {
+        pUARTx->CR1 |= USART_CR1_UE;
+    }
+    else if (State == UART_DISABLE)
+    {
+        pUARTx->CR1 &= ~USART_CR1_UE;
+    }
+}
+
+void UART_Init(UART_HandleTypeDef *pUARTHandle)
+{
+    /*Enabling the Clock For UART*/
+    UART_EnableClock(pUARTHandle->pUARTx);
+
+    /*Disabling UART for Configuring*/
+    UART_PeripheralControl(pUARTHandle->pUARTx, UART_DISABLE);
+
+    uint32_t TempReg = 0;
+    uint32_t UartDiv = 0;
+
+    // Configuring the Word Len 0:8bit, 1:9bit
+    TempReg |= pUARTHandle->Config.WordLen << USART_CR1_M_Pos;
+
+    if (pUARTHandle->Config.Parity != UART_PARITY_NONE)
+    {
+        TempReg |= USART_CR1_PCE;
+        TempReg |= pUARTHandle->Config.Parity << USART_CR1_PS_Pos;
+    }
+    if (pUARTHandle->Config.Mode == UART_MODE_RX_ONLY)
+    {
+        TempReg |= USART_CR1_RE;
+        TempReg &= ~USART_CR1_TE;
+    }
+    else if (pUARTHandle->Config.Mode == UART_MODE_TX_ONLY)
+    {
+        TempReg |= USART_CR1_TE;
+        TempReg &= ~USART_CR1_RE;
+    }
+    else
+    {
+        TempReg |= USART_CR1_RE | USART_CR1_TE;
+    }
+    pUARTHandle->pUARTx->CR1 = TempReg;
+
+    /*Calculating Baud Rate*/
+    UartDiv = 45000000U / pUARTHandle->Config.BaudRate;
+
+    USART2->BRR = ((UartDiv / 16) << USART_BRR_DIV_Mantissa_Pos) | ((UartDiv % 16) << USART_BRR_DIV_Fraction_Pos);
+
+    UART_PeripheralControl(pUARTHandle->pUARTx, UART_ENABLE);
+}
 
 void UartSendBuffer(char *buffer)
 {
@@ -61,7 +131,7 @@ void UartClearBuffer(char *buffer, uint8_t len)
     }
 }
 
-static UART_Handle_t handle;
+static UART_HandleTypeDef handle;
 
 void UART_ReceiveIT(uint8_t *pRxBuffer, uint32_t Len)
 {
@@ -91,7 +161,6 @@ static void USART_Handle_RxNIE()
             USART2->CR1 &= ~USART_CR1_RXNEIE;
             handle.RxBusy = 0;
             USART2->SR &= ~USART_SR_RXNE;
-
         }
     }
 }

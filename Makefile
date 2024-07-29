@@ -16,8 +16,8 @@ CXXSTD		:= c++20
 # Project specific configuration
 BUILD_DIR 	:= build
 BUILD_TYPE	?= Debug
-SRC_DIR 	:= ./src
-INC_DIRS	:= ./core ./inc
+SRC_DIR 	:= ./src ./hardware/src
+INC_DIRS	:= ./core ./inc ./hardware/inc
 
 
 PREFIX		?= arm-none-eabi
