@@ -1,0 +1,6 @@
+/home/asraful/Code/Baremetal/build/CMakeFiles/STM32F4XX.dir
+/home/asraful/Code/Baremetal/build/CMakeFiles/edit_cache.dir
+/home/asraful/Code/Baremetal/build/CMakeFiles/rebuild_cache.dir
+/home/asraful/Code/Baremetal/build/lib/CMakeFiles/hardware.dir
+/home/asraful/Code/Baremetal/build/lib/CMakeFiles/edit_cache.dir
+/home/asraful/Code/Baremetal/build/lib/CMakeFiles/rebuild_cache.dir

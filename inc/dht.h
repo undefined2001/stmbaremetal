@@ -1,7 +1,7 @@
 #ifndef _INC_DHT_H
 #define _INC_DHT_H
 #include "stm32f446xx.h"
-#include "timer.h"
+#include "hardware/timer.h"
 #include <stdbool.h>
 
 

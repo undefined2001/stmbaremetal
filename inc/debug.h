@@ -1,5 +1,5 @@
 #ifndef _INC_DEBUG_H
-#include "uart.h"
+#include "hardware/uart.h"
 #include <stdio.h>
 #include <stdarg.h>
 

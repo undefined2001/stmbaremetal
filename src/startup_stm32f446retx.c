@@ -1,6 +1,5 @@
 #include <stdint.h>
-#include "clock.h"
-#include "uart.h"
+#include "hardware/clock.h"
 
 typedef void (*f_ptr)(void);
 
@@ -236,7 +235,6 @@ f_ptr vectors[] __attribute((section(".isr_vector"))) = {
 void Reset_Handler()
 {
     SetSystemClock180MHz();
-    UartInit();
     uint32_t *src, *dest;
     /*Copying Data from FLASH to RAM*/
     src = (uint32_t *)&_sidata;

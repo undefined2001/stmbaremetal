@@ -1,7 +1,7 @@
 #ifndef _INC_BME280_H
 #define _INC_BME280_H
 #include <stdbool.h>
-#include "i2c.h"
+#include "hardware/i2c.h"
 #include "debug.h"
 
 #define BME280_CONCAT_BYTES(byte_one, byte_two) ((byte_one << 8) | byte_two)
