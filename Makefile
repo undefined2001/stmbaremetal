@@ -16,8 +16,8 @@ CXXSTD		:= c++20
 # Project specific configuration
 BUILD_DIR 	:= build
 BUILD_TYPE	?= Debug
-SRC_DIR 	:= ./src ./hardware/src
-INC_DIRS	:= ./core ./inc ./hardware/inc
+SRC_DIR 	:= ./src 
+INC_DIRS	:= ./core ./inc
 
 
 PREFIX		?= arm-none-eabi
@@ -59,8 +59,8 @@ LDFLAGS		+=   -fno-tree-loop-distribute-patterns #-nostdlib
 
 
 # Warning options for C and CXX compiler
-CFLAGS		+= -Wall -Werror#-Wextra -Wundef -Wshadow -Wredundant-decls -Wmissing-prototypes #-Wstrict-prototypes
-CXXFLAGS	+= -Wall -Werror #-Wextra -Wundef -Wshadow -Wredundant-decls -Weffc++ -Werror
+CFLAGS		+= -Wall #-Werror#-Wextra -Wundef -Wshadow -Wredundant-decls -Wmissing-prototypes #-Wstrict-prototypes
+CXXFLAGS	+= -Wall #-Werror #-Wextra -Wundef -Wshadow -Wredundant-decls -Weffc++ -Werror
 
 
 LDFLAGS		+= $(addprefix -T, ${LDSCRIPT}) --specs=nosys.specs -Wl,--gc-sections,--print-memory-usage 

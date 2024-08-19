@@ -24,6 +24,14 @@ target_link_libraries(${TARGET} PRIVATE hardware)
 
 target_compile_definitions(${TARGET} PUBLIC STM32F446xx)
 
+option(MOCK "Mock Include" ON)
+
+if(MOCK)
+  message(STATUS "TEST is ON")
+else()
+  message(STATUS "TEST is OFF")
+endif()
+
 if(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE Debug)
 endif()
@@ -43,3 +51,17 @@ target_link_options(${TARGET} PRIVATE
                     -lc 
                     -lm
                     )
+
+add_custom_command(
+  TARGET ${TARGET}
+  POST_BUILD
+  COMMAND ${CMAKE_OBJCOPY} -O binary ${TARGET}.elf ${TARGET}.bin
+  COMMENT "Converting ELF to BIN"
+)
+
+add_custom_target(flash
+    DEPENDS ${TARGET}.bin
+    COMMAND st-flash write ${TARGET}.bin 0x8000000
+    COMMENT "Flashing the binary to the device"
+)
+                  

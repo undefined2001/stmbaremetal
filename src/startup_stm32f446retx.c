@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "hardware/clock.h"
+#include "clock.h"
 
 typedef void (*f_ptr)(void);
 
